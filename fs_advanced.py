@@ -10,35 +10,60 @@ def display_help():
 Usage: file_mgr.py <operation> [...]
 -f  --filename <filename>		Specify the filename
 -d  --directory <directory>		Specify the directory to look/run in
--h  --help						Prints this message
+-h  --help				Prints this message
 
 A filename is required.
-If no directory is specified, directory will default to the cwd.
+If no directory is specified, directory will default to cwd.
 
-Ex: file_mgr.py --file-name "wallpaper_" --directory "~/Pictures/Wallpapers"
-Ex: file_mgr.py -f "wallpaper_" -d "~/Pictures/Wallpapers"
+Ex: file_advanced.py -f "wallpaper"
+Ex: file_advanced.py --file-name "wallpaper" --directory "C:Users/Daniel Boling/Pictures/Wallpapers"
+Ex: file_advanced.py -f "wallpaper" -d "C:Users/Daniel Boling/Pictures/Wallpapers"
 """)
 # use a multi-line comment to format help messages
 
 
 def manage_vars():
+	directory = None
+	filename = None
+	if not len(sys.argv) > 1:
+		# if the only argument is the program name exit
+		display_help()
+		sys.exit()
 	for i in sys.argv:
-		if i == '-f' or i == '--filename':
-			if sys.argv[sys.argv.index(i)+1] == '-d' or sys.argv[sys.argv.index(i)+1] == '--directory':
+		try: 
+			if i == '-h' or i == '--help':
 				display_help()
 				sys.exit()
-			else:
-				try: 
+			elif i == '-f' or i == '--filename':
+				if sys.argv[sys.argv.index(i)+1] == '-d' or sys.argv[sys.argv.index(i)+1] == '--directory':
+					# ensure user didn't enter <program> -f -d
+					display_help()
+					sys.exit()
+				else:
+					# ensure user didn't enter -f with not following arg
 					filename = sys.argv[sys.argv.index(i)+1]
+
+			elif i == '-d' or i == '--directory':
+				try: 
+					# ensure user didn't enter -d with not following arg
+					directory = sys.argv[sys.argv.index(i)+1]
 				except IndexError:
 					display_help()
 					sys.exit()
-		elif i == '-d' or i == '--directory':
-			directory = sys.argv[sys.argv.index(i)+1]
-		else:
-			continue
-		# loop through the args list and set options.
-		# when reaching end of list, continue.
+			else:
+				if i == sys.argv[-1]:
+					if not filename:
+						# assume at end of args and filename not set
+						display_help()
+						sys.exit()
+				else:
+					continue
+			# loop through the args list and set options.
+			# when reaching end of list, continue.
+		except IndexError:
+			display_help()
+			sys.exit()
+
 
 	if not filename:
 		# if no filename specified, display help and exit
@@ -54,11 +79,16 @@ def main():
 	renamed = 0
 	skipped = 0
 	
-	if directory:
-		os.chdir(directory)
+	if directory != None:
+		try:
+			os.chdir(directory)
+		except FileNotFoundError:
+			print("Directory Invalid. Stopping")
+			display_help()
+			sys.exit()
 	else:
 		cwd = os.getcwd()
-		print('No directory specified. Script will run in {0}'.format(cwd))
+		print('No directory specified. Script will run in \"{0}\"'.format(cwd))
 
 	files = os.listdir()
 	prefix_files = []
@@ -75,7 +105,7 @@ def main():
 		# build a list of filename attributes
 		name = ''.join(name)
 		# join all attributes together to make a cohesive filename
-		if name[:name.index('.')] in prefix_files:
+		if name[:name.index('.')-1] in prefix_files:
 			# if the filename already exists, ignore/skip it
 			# this allows rerunning the script periodically and not affecting old files
 			skipped += 1
